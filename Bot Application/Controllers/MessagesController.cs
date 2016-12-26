@@ -61,11 +61,12 @@
             string[] a = msg.ToLower().Split(' ');
             if (a.IsPresent("help"))
             {
-                return @"This is a simple weather bot.<br/>
+                return @"Hey! This is a simple weather bot.<br/>
 Example of commands include:<br/>
   temperature today<br/>
   temperature in Minsk<br/>
-  humidity tomorrow";
+  humidity tomorrow<br/>
+  pressure today";
             }
             if (a.IsPresent("temperature")) mes |= Measurement.Temp;
             if (a.IsPresent("humidity")) mes |= Measurement.Humidity;
@@ -93,10 +94,10 @@ Example of commands include:<br/>
             {
                 sb.Append($"The temperature on {r.Date} in {city} is {r.Temp}<br/>");
                 sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure}<br/>");
-                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity}<br/>");
+                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity}");
             }
 
-            if (sb.Length == 0) return "Fuck off! I do not understand";
+            if (sb.Length == 0) return "Fuck off! I do not understand you stupid human!<br/>Please write 'help' for details";
             else return sb.ToString();
         }
 
