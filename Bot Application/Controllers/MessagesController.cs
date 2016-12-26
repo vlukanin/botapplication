@@ -70,7 +70,7 @@ Example of commands include:<br/>
             if (a.IsPresent("temperature")) mes |= Measurement.Temp;
             if (a.IsPresent("humidity")) mes |= Measurement.Humidity;
             if (a.IsPresent("pressure")) mes |= Measurement.Pressure;
-            if (a.IsPresent("weather")) mes |= Measurement.Pressure;
+            if (a.IsPresent("weather")) mes |= Measurement.Weather;
             if (a.IsPresent("today")) { when = 0; whens = "today"; }
             if (a.IsPresent("tomorrow")) { when = 1; whens = "tomorrow"; }
             if (a.NextTo("in") != "") city = a.NextTo("in");
@@ -91,12 +91,12 @@ Example of commands include:<br/>
             }
             if ((mes & Measurement.Weather) > 0)
             {
-                sb.Append($"The temperature on {r.Date} in {city} is {r.Temp}\r\n");
-                sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure}\r\n");
-                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity}\r\n");
+                sb.Append($"The temperature on {r.Date} in {city} is {r.Temp}<br/>");
+                sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure}<br/>");
+                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity}<br/>");
             }
 
-            if (sb.Length == 0) return "I do not understand";
+            if (sb.Length == 0) return "Fuck off! I do not understand";
             else return sb.ToString();
         }
 
