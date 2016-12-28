@@ -108,6 +108,16 @@ Examples of commands:<br/>
                 WP.Location = a.NextTo("in");
             }
 
+            if (a.IsPresent("emotions"))
+            {
+                WP.MeasurementType = Measurement.Emotions;
+            }
+
+            if (!string.IsNullOrEmpty(a.NextTo("of")))
+            {
+                WP.Person = a.NextToAllTheRest("of");
+            }
+
             return await WP.BuildResult(userName, previousParam);
         }
 

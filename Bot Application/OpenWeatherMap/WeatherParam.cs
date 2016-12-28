@@ -6,7 +6,9 @@
     using System.Text;
     using System.Threading.Tasks;
 
-    public enum Measurement { Temperature = 1, Humidity = 2, Pressure = 4, Weather = 8, None = 0 }
+    using Microsoft.ProjectOxford.Emotion;
+
+    public enum Measurement { Temperature = 1, Humidity = 2, Pressure = 4, Weather = 8, Emotions = 16, None = 0 }
 
     public class WeatherParam
     {
@@ -18,6 +20,7 @@
         }
 
         public string Location { get; set; }
+        public string Person { get; set; }
         public Measurement MeasurementType { get; set; }
         public WeatherParam()
         {
@@ -90,6 +93,46 @@
                 understand = true;
             }
 
+            if (Measure(Measurement.Emotions))
+            {
+                var searchRes = await Utils.Search(Person, 5);
+                var cli = new EmotionServiceClient("e48ef61ea8514ecbb45a874c188c0917");
+                float happyCount = 0, angerCount = 0, surprisedCount = 0;
+                string happyImage = string.Empty, angerImage = string.Empty, surprisedImage = string.Empty;
+                foreach (var imageUrl in searchRes)
+                {
+                    var recognized = await cli.RecognizeAsync(imageUrl);
+                    if (recognized != null && recognized.Length > 0)
+                    {
+                        var f = recognized[0];
+                        if (f.Scores.Happiness > happyCount)
+                        {
+                            happyCount = f.Scores.Happiness;
+                            happyImage = imageUrl;
+                        }
+                        if (f.Scores.Anger > angerCount)
+                        {
+                            angerCount = f.Scores.Anger;
+                            angerImage = imageUrl;
+                        }
+                        if (f.Scores.Surprise > surprisedCount)
+                        {
+                            surprisedCount = f.Scores.Surprise;
+                            surprisedImage = imageUrl;
+                        }
+                        await Task.Delay(1000);
+                    }
+                }
+
+                var person = Person.Replace("+", " ");
+
+                sb.Append($"Happy image of {person} (happiness {happyCount * 100}%): {happyImage}<br/>");
+                sb.Append($"Angry image of {person} (anger {angerCount * 100}%): {angerImage}<br/>");
+                sb.Append($"Surprised image of {person} (surprise {surprisedCount * 100}%): {surprisedImage}<br/>");
+
+                understand = true;
+            }
+
             if (!understand)
             {
                 sb.Append("I do not understand you.<br/>Please write 'help' for details");
@@ -98,9 +141,9 @@
                     sb.Append($"<br/>(Last time you asked about {previousParam.MeasurementType.ToString().ToLower()} in {previousParam.Location.ToUpper()} for {previousParam.Date})");
                 }
             }
-            else if (!string.IsNullOrEmpty(this.Location))
+            else if (!string.IsNullOrEmpty(this.Location) && !Measure(Measurement.Emotions))
             {
-                var imageSearchResults = await Search(this.Location, 1);
+                var imageSearchResults = await Utils.Search(this.Location, 1);
                 if (imageSearchResults.Count > 0)
                 {
                     sb.Append("<br/>");
@@ -109,26 +152,6 @@
             }
 
             return sb.ToString();
-        }
-
-        private async Task<List<string>> Search(string query, int count)
-        {
-            var client = new HttpClient();
-            //client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "291131ee5c274fb78a00797c16af69bc");
-            // Across all Bing Search APIs (Web, Image, Video, News): 1,000 transactions per month, 5 per second. Trial keys expire after a 90 day period, after which a subscription may be purchased on the Azure portal.
-            client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "dd3ca2ab17de4174b6e558e845da901a");
-            var uri = $"https://api.cognitive.microsoft.com/bing/v5.0/images/search?count={count}&q={query}";
-            var response = await client.GetStringAsync(uri);
-            dynamic x = Newtonsoft.Json.JsonConvert.DeserializeObject(response);
-
-            var list = new List<string>();
-            foreach (var z in x.value)
-            {
-                var url = z.contentUrl.ToString();
-                list.Add(url);
-            }
-
-            return list;
         }
     }
 }

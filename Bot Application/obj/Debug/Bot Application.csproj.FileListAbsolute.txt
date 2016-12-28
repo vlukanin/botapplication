@@ -37,3 +37,10 @@ D:\Work\DotNext 2016\Bot Application\Bot Application\bin\zh-hans\Microsoft.Bot.B
 D:\Work\DotNext 2016\Bot Application\Bot Application\obj\Debug\Bot Application.csprojResolveAssemblyReference.cache
 D:\Work\DotNext 2016\Bot Application\Bot Application\obj\Debug\Bot Application1.dll
 D:\Work\DotNext 2016\Bot Application\Bot Application\obj\Debug\Bot Application1.pdb
+D:\Work\DotNext 2016\Bot Application\Bot Application\bin\Microsoft.ProjectOxford.Common.dll
+D:\Work\DotNext 2016\Bot Application\Bot Application\bin\Microsoft.ProjectOxford.Emotion.dll
+D:\Work\DotNext 2016\Bot Application\Bot Application\bin\System.Net.Http.Extensions.dll
+D:\Work\DotNext 2016\Bot Application\Bot Application\bin\System.Net.Http.Primitives.dll
+D:\Work\DotNext 2016\Bot Application\Bot Application\bin\System.Net.Http.Extensions.xml
+D:\Work\DotNext 2016\Bot Application\Bot Application\bin\System.Net.Http.Primitives.xml
+D:\Work\DotNext 2016\Bot Application\Bot Application\obj\Debug\Bot Application.csproj.App.config
