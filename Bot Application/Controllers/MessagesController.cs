@@ -1,19 +1,13 @@
 ﻿namespace Bot_Application.Controllers
 {
     using System;
-    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
     using System.Web.Http;
-    using System.Web.Http.Description;
     using Microsoft.Bot.Connector;
-    using Newtonsoft.Json;
-
     using OpenWeatherMap;
-
-
 
     [BotAuthentication]
     public class MessagesController : ApiController
@@ -26,26 +20,17 @@
         {
             if (activity.Type == ActivityTypes.Message)
             {
-                /*ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                // calculate something for us to return
-                int length = (activity.Text ?? string.Empty).Length;
-
-                // return our reply to the user
-                Activity reply = activity.CreateReply($"You sent {activity.Text} which was {length} characters");
-                await connector.Conversations.ReplyToActivityAsync(reply);*/
-
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                //var rep = await this.Reply(activity.Text);
                 var rep = await this.Reply(activity);
                 Activity reply = activity.CreateReply(rep);
                 await connector.Conversations.ReplyToActivityAsync(reply);
-
             }
             else
             {
-                HandleSystemMessage(activity);
+                this.HandleSystemMessage(activity);
             }
-            var response = Request.CreateResponse(HttpStatusCode.OK);
+
+            var response = this.Request.CreateResponse(HttpStatusCode.OK);
             return response;
         }
 
@@ -55,6 +40,12 @@
 
         async Task<string> Reply([FromBody]Activity activity)
         {
+            string userName = string.Empty;
+            if (activity.From != null && !string.IsNullOrEmpty(activity.From.Name))
+            {
+                userName = $" {activity.From.Name}";
+            }
+
             string msg = activity.Text;
 
             string city = "Minsk";
@@ -62,9 +53,10 @@
             string whens = "today";
             Measurement mes = Measurement.None;
             string[] a = msg.ToLower().Split(' ');
+
             if (a.IsPresent("help"))
             {
-                return @"Hey! This is a simple weather bot.<br/>
+                return "Hey" + userName + @"! This is a simple weather bot.<br/>
 Examples of commands:<br/>
   temperature today<br/>
   temperature in Minsk<br/>
@@ -79,44 +71,47 @@ Examples of commands:<br/>
             if (a.IsPresent("today")) { when = 0; whens = "today"; }
             if (a.IsPresent("tomorrow")) { when = 1; whens = "tomorrow"; }
             if (a.NextTo("in") != "") city = a.NextTo("in");
+
             var res = await OWM.Forecast(city);
             var r = res[when];
+
             StringBuilder sb = new StringBuilder();
+
+            sb.Append($"Hello{userName}!<br/>");
+
+            bool understand = false;
             if ((mes & Measurement.Temp) > 0)
             {
                 sb.Append($"The temperature on {r.Date} in {city} is {r.Temp} °C");
+                understand = true;
             }
+
             if ((mes & Measurement.Pressure) > 0)
             {
                 sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure} hpa");
+                understand = true;
             }
+
             if ((mes & Measurement.Humidity) > 0)
             {
                 sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity} %");
+                understand = true;
             }
+
             if ((mes & Measurement.Weather) > 0)
             {
                 sb.Append($"The temperature on {r.Date} in {city} is {r.Temp} °C.<br/>");
                 sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure} hpa.<br/>");
                 sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity} %.");
+                understand = true;
             }
 
-            if (sb.Length == 0)
+            if (!understand)
             {
-                return "I do not understand you.<br/>Please write 'help' for details";
+                sb.Append("I do not understand you.<br/>Please write 'help' for details");
             }
-            else
-            {
-                // temporary
-                sb.Append("<br/><br/>Debug info:<br/>");
-                sb.Append("activity.ChannelId=" + activity.ChannelId + "<br/>");
-                sb.Append("activity.Id=" + activity.Id + "<br/>");
-                sb.Append("activity.From.Id=" + activity.From.Id + "<br/>");
-                sb.Append("activity.From.Name=" + activity.From.Name + "<br/>");
-                sb.Append("activity.TopicName=" + activity.TopicName + "<br/>");
 
-                return sb.ToString();
-            }
+            return sb.ToString();
         }
 
         private Activity HandleSystemMessage(Activity message)
