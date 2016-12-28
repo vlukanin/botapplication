@@ -3,7 +3,6 @@
     using System;
     using System.Net;
     using System.Net.Http;
-    using System.Text;
     using System.Threading.Tasks;
     using System.Web.Http;
     using Microsoft.Bot.Connector;
@@ -21,9 +20,24 @@
             if (activity.Type == ActivityTypes.Message)
             {
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                var rep = await this.Reply(activity);
+
+                var state = activity.GetStateClient();
+                var userData = await state.BotState.GetUserDataAsync(activity.ChannelId, activity.From.Id);
+                var x = userData.GetProperty<WeatherParam>("weather");
+                //if (x != null) WP = x;
+
+                var rep = await this.Reply(activity, x);
                 Activity reply = activity.CreateReply(rep);
+
                 await connector.Conversations.ReplyToActivityAsync(reply);
+
+                if (this.WP != null && this.WP.MeasurementType != Measurement.None)
+                {
+                    x = this.WP;
+                }
+
+                userData.SetProperty<WeatherParam>("weather", x);
+                await state.BotState.SetUserDataAsync(activity.ChannelId, activity.From.Id, userData);
             }
             else
             {
@@ -34,11 +48,9 @@
             return response;
         }
 
-        enum Measurement { Temp = 1, Humidity = 2, Pressure = 4, Weather = 8, None = 0 };
+        WeatherParam WP = new WeatherParam();
 
-        WeatherClient OWM = new WeatherClient(Config.OpenWeatherMapAPIKey);
-
-        async Task<string> Reply([FromBody]Activity activity)
+        async Task<string> Reply([FromBody]Activity activity, WeatherParam previousParam)
         {
             string userName = string.Empty;
             if (activity.From != null && !string.IsNullOrEmpty(activity.From.Name))
@@ -48,10 +60,6 @@
 
             string msg = activity.Text;
 
-            string city = "Minsk";
-            int when = 0;
-            string whens = "today";
-            Measurement mes = Measurement.None;
             string[] a = msg.ToLower().Split(' ');
 
             if (a.IsPresent("help"))
@@ -64,54 +72,43 @@ Examples of commands:<br/>
   pressure today<br/>
   weather tomorrow in London";
             }
-            if (a.IsPresent("temperature")) mes |= Measurement.Temp;
-            if (a.IsPresent("humidity")) mes |= Measurement.Humidity;
-            if (a.IsPresent("pressure")) mes |= Measurement.Pressure;
-            if (a.IsPresent("weather")) mes |= Measurement.Weather;
-            if (a.IsPresent("today")) { when = 0; whens = "today"; }
-            if (a.IsPresent("tomorrow")) { when = 1; whens = "tomorrow"; }
-            if (a.NextTo("in") != "") city = a.NextTo("in");
 
-            var res = await OWM.Forecast(city);
-            var r = res[when];
-
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append($"Hello{userName}!<br/>");
-
-            bool understand = false;
-            if ((mes & Measurement.Temp) > 0)
+            if (a.IsPresent("temperature"))
             {
-                sb.Append($"The temperature on {r.Date} in {city} is {r.Temp} °C");
-                understand = true;
+                WP.MeasurementType = Measurement.Temperature;
             }
 
-            if ((mes & Measurement.Pressure) > 0)
+            if (a.IsPresent("humidity"))
             {
-                sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure} hpa");
-                understand = true;
+                WP.MeasurementType = Measurement.Humidity;
             }
 
-            if ((mes & Measurement.Humidity) > 0)
+            if (a.IsPresent("pressure"))
             {
-                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity} %");
-                understand = true;
+                WP.MeasurementType = Measurement.Pressure;
             }
 
-            if ((mes & Measurement.Weather) > 0)
+            if (a.IsPresent("weather"))
             {
-                sb.Append($"The temperature on {r.Date} in {city} is {r.Temp} °C.<br/>");
-                sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure} hpa.<br/>");
-                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity} %.");
-                understand = true;
+                WP.MeasurementType = Measurement.Weather;
             }
 
-            if (!understand)
+            if (a.IsPresent("today"))
             {
-                sb.Append("I do not understand you.<br/>Please write 'help' for details");
+                WP.Today();
             }
 
-            return sb.ToString();
+            if (a.IsPresent("tomorrow"))
+            {
+                WP.Tomorrow();
+            }
+
+            if (!string.IsNullOrEmpty(a.NextTo("in")))
+            {
+                WP.Location = a.NextTo("in");
+            }
+
+            return await WP.BuildResult(userName, previousParam);
         }
 
         private Activity HandleSystemMessage(Activity message)

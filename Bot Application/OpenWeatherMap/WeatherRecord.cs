@@ -10,7 +10,7 @@
         public DateTime When { get; set; }
         public string Date
         {
-            get { return $"{this.When.Day:D2}.{this.When.Month:D2}"; }
+            get { return $"{this.When.Day:D2}.{this.When.Month:D2}.{this.When.Year:D4}"; }
         }
 
         public string FullDate
