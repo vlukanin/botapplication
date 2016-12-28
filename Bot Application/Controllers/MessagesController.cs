@@ -1,4 +1,4 @@
-﻿namespace Bot_Application
+﻿namespace Bot_Application.Controllers
 {
     using System;
     using System.Linq;
@@ -35,7 +35,8 @@
                 await connector.Conversations.ReplyToActivityAsync(reply);*/
 
                 ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                var rep = await Reply(activity.Text);
+                //var rep = await this.Reply(activity.Text);
+                var rep = await this.Reply(activity);
                 Activity reply = activity.CreateReply(rep);
                 await connector.Conversations.ReplyToActivityAsync(reply);
 
@@ -52,8 +53,10 @@
 
         WeatherClient OWM = new WeatherClient(Config.OpenWeatherMapAPIKey);
 
-        async Task<string> Reply(string msg)
+        async Task<string> Reply([FromBody]Activity activity)
         {
+            string msg = activity.Text;
+
             string city = "Minsk";
             int when = 0;
             string whens = "today";
@@ -62,11 +65,12 @@
             if (a.IsPresent("help"))
             {
                 return @"Hey! This is a simple weather bot.<br/>
-Example of commands include:<br/>
+Examples of commands:<br/>
   temperature today<br/>
   temperature in Minsk<br/>
   humidity tomorrow<br/>
-  pressure today";
+  pressure today<br/>
+  weather tomorrow in London";
             }
             if (a.IsPresent("temperature")) mes |= Measurement.Temp;
             if (a.IsPresent("humidity")) mes |= Measurement.Humidity;
@@ -80,25 +84,39 @@ Example of commands include:<br/>
             StringBuilder sb = new StringBuilder();
             if ((mes & Measurement.Temp) > 0)
             {
-                sb.Append($"The temperature on {r.Date} in {city} is {r.Temp}\r\n");
+                sb.Append($"The temperature on {r.Date} in {city} is {r.Temp} °C");
             }
             if ((mes & Measurement.Pressure) > 0)
             {
-                sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure}\r\n");
+                sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure} hpa");
             }
             if ((mes & Measurement.Humidity) > 0)
             {
-                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity}\r\n");
+                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity} %");
             }
             if ((mes & Measurement.Weather) > 0)
             {
-                sb.Append($"The temperature on {r.Date} in {city} is {r.Temp}<br/>");
-                sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure}<br/>");
-                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity}");
+                sb.Append($"The temperature on {r.Date} in {city} is {r.Temp} °C.<br/>");
+                sb.Append($"The pressure on {r.Date} in {city} is {r.Pressure} hpa.<br/>");
+                sb.Append($"Humidity on {r.Date} in {city} is {r.Humidity} %.");
             }
 
-            if (sb.Length == 0) return "Fuck off! I do not understand you stupid human!<br/>Please write 'help' for details";
-            else return sb.ToString();
+            if (sb.Length == 0)
+            {
+                return "I do not understand you.<br/>Please write 'help' for details";
+            }
+            else
+            {
+                // temporary
+                sb.Append("<br/><br/>Debug info:<br/>");
+                sb.Append("activity.ChannelId=" + activity.ChannelId + "<br/>");
+                sb.Append("activity.Id=" + activity.Id + "<br/>");
+                sb.Append("activity.From.Id=" + activity.From.Id + "<br/>");
+                sb.Append("activity.From.Name=" + activity.From.Name + "<br/>");
+                sb.Append("activity.TopicName=" + activity.TopicName + "<br/>");
+
+                return sb.ToString();
+            }
         }
 
         private Activity HandleSystemMessage(Activity message)
